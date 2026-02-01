@@ -23,7 +23,8 @@
 
 PrePATH is a comprehensive preprocessing toolkit for whole slide images (WSI), built upon [CLAM](https://github.com/mahmoodlab/CLAM) and [ASlide](https://github.com/MrPeterJin/ASlide).
 
-## TODO 
+## TODO
+
 - H0-mini
 - OpenMidnight
 - TITAN (Slide level)
@@ -31,6 +32,7 @@ PrePATH is a comprehensive preprocessing toolkit for whole slide images (WSI), b
 ## Installation
 
 ### Prerequisites
+
 - Anaconda or Miniconda
 - `openslide-tools` (system dependency)
 
@@ -49,6 +51,7 @@ wget https://github.com/birkhoffkiki/GPFM/releases/download/ckpt/GPFM.pth
 ```
 
 **Notes:**
+
 - ASlide should be installed as a Python package from [GitHub](https://github.com/MrPeterJin/ASlide) and is included in `requirements/gpfm.txt`.
 - Environment configurations for other foundation models should be referenced from their respective repositories.
 
@@ -62,6 +65,10 @@ Extract coordinates of foreground patches from whole slide images:
 # Configure variables in the script before execution
 bash scripts/get_coors/SAL/sal.sh
 ```
+
+> ⚠ Note: The get_coord script provides an auto_size option to automatically adapt to different level-0 WSI magnifications, generating coordinates equivalent to a 256×256 FOV at 20× (see PrePATH/configs/resolution.py for customization).
+
+> ⚠ Note: The same option is also available for crop_image scripts. Both are disabled by default. If enabled (by appending the `--auto_size` sign), make sure to turn it on in both scripts to ensure consistent coordinate–crop alignment.
 
 ### Step 2: Feature Extraction
 
@@ -106,7 +113,7 @@ models="resnet50 gpfm"
 | MUSK | `musk` | [HuggingFace](https://huggingface.co/xiangjx/musk) |
 | OmiCLIP | `omiclip` | [Github](https://github.com/GuangyuWangLab2021/Loki) |
 | PathoCLIP | `pathoclip` | [Github](https://github.com/wenchuan-zhang/patho-r1) |
----
+-------------------------
 
 ## Supported WSI Formats
 
@@ -116,4 +123,3 @@ PrePATH supports the following whole slide image formats:
 - **SDPC** (.sdpc)
 - **TRON** (.tron)
 - All formats supported by OpenSlide (including .svs, .tiff, .ndpi, .vms, .vmu, .scn, .mrxs, .tif, .bif, and others)
-

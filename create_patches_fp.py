@@ -98,6 +98,7 @@ def seg_and_patch(
     stitch=False,
     patch=False,
     auto_skip=True,
+    auto_size=False,
     process_list=None,
     wsi_format="svs",
 ):
@@ -152,20 +153,26 @@ def seg_and_patch(
         full_path = os.path.join(source, slide)
         try:
             WSI_object = wsi_slide_image(full_path)
-            mpp = WSI_object.mpp
-            if mpp is None:
-                # Fallback: assume 40x magnification (mpp=0.25) for files without MPP metadata
-                print(f"WARNING: MPP information not available for {slide}. Assuming 40x magnification (mpp=0.25).")
-                mpp = 0.25
-                object_power = 40
+            if auto_size:
+                mpp = WSI_object.mpp
+                if mpp is None:
+                    # Fallback: assume 40x magnification (mpp=0.25) for files without MPP metadata
+                    print(f"WARNING: MPP information not available for {slide}. Assuming 40x magnification (mpp=0.25).")
+                    mpp = 0.25
+                    object_power = 40
+                else:
+                    # Convert mpp to magnification
+                    object_power = int(round(10.0 / mpp))
+                patch_size, step_size = adjust_size(object_power)
+                print("#" * 100)
+                print("levels:", WSI_object.wsi.level_dimensions)
+                print("mpp: {:.3f}, object_power: {}x, patch_size: {}, step_size: {} (auto-adjusted)".format(mpp, object_power, patch_size, step_size))
+                print("#" * 100)
             else:
-                # Convert mpp to magnification
-                object_power = int(round(10.0 / mpp))
-            patch_size, step_size = adjust_size(object_power)
-            print("#" * 100)
-            print("levels:", WSI_object.wsi.level_dimensions)
-            print("mpp: {:.3f}, object_power: {}x, patch_size: {}, step_size: {}".format(mpp, object_power, patch_size, step_size))
-            print("#" * 100)
+                print("#" * 100)
+                print("levels:", WSI_object.wsi.level_dimensions)
+                print("Using fixed patch_size: {}, step_size: {}".format(patch_size, step_size))
+                print("#" * 100)
         except Exception as e:
             print("Failed to reading:", full_path)
             print('Exception:', e)
@@ -321,6 +328,7 @@ def mp_seg_and_patch(
     stitch=False,
     patch=False,
     auto_skip=True,
+    auto_size=False,
     process_list=None,
     wsi_format="svs",
 ):
@@ -373,6 +381,29 @@ def mp_seg_and_patch(
         full_path = os.path.join(source, slide)
         try:
             WSI_object = wsi_slide_image(full_path)
+            # Auto-adjust patch_size and step_size based on mpp if auto_size is enabled
+            current_patch_size = patch_size
+            current_step_size = step_size
+            if auto_size:
+                mpp = WSI_object.mpp
+                if mpp is None:
+                    # Fallback: assume 40x magnification (mpp=0.25) for files without MPP metadata
+                    print(f"WARNING: MPP information not available for {slide}. Assuming 40x magnification (mpp=0.25).")
+                    mpp = 0.25
+                    object_power = 40
+                else:
+                    # Convert mpp to magnification
+                    object_power = int(round(10.0 / mpp))
+                current_patch_size, current_step_size = adjust_size(object_power)
+                print("#" * 100)
+                print("levels:", WSI_object.wsi.level_dimensions)
+                print("mpp: {:.3f}, object_power: {}x, patch_size: {}, step_size: {} (auto-adjusted)".format(mpp, object_power, current_patch_size, current_step_size))
+                print("#" * 100)
+            else:
+                print("#" * 100)
+                print("levels:", WSI_object.wsi.level_dimensions)
+                print("Using fixed patch_size: {}, step_size: {}".format(current_patch_size, current_step_size))
+                print("#" * 100)
         except:
             print("Failed to reading:", full_path)
             return
@@ -472,7 +503,7 @@ def mp_seg_and_patch(
 
         patch_time_elapsed = -1  # Default time
         if patch:
-            current_patch_params.update({"patch_level": patch_level, "patch_size": patch_size, "step_size": step_size, "save_path": patch_save_dir})
+            current_patch_params.update({"patch_level": patch_level, "patch_size": current_patch_size, "step_size": current_step_size, "save_path": patch_save_dir})
             file_path, patch_time_elapsed = patching(
                 WSI_object=WSI_object,
                 **current_patch_params,
@@ -510,6 +541,7 @@ parser.add_argument("--preset", default=None, type=str, help="predefined profile
 parser.add_argument("--patch_level", type=int, default=0, help="downsample level at which to patch")
 parser.add_argument("--process_list", type=str, default=None, help="name of list of images to process with parameters (.csv)")
 parser.add_argument("--wsi_format", type=str, default="svs")
+parser.add_argument("--auto_size", default=False, action="store_true", help="automatically adjust patch_size and step_size based on WSI magnification (mpp)")
 parser.add_argument("--use_mp", default=False, action="store_true")
 
 
@@ -566,4 +598,4 @@ if __name__ == "__main__":
         fn = mp_seg_and_patch
     else:
         fn = seg_and_patch
-    seg_times, patch_times = fn(**directories, **parameters, patch_size=args.patch_size, step_size=args.step_size, seg=args.seg, use_default_params=False, save_mask=True, stitch=args.stitch, patch_level=args.patch_level, patch=args.patch, process_list=process_list, auto_skip=args.no_auto_skip, wsi_format=wsi_format)
+    seg_times, patch_times = fn(**directories, **parameters, patch_size=args.patch_size, step_size=args.step_size, seg=args.seg, use_default_params=False, save_mask=True, stitch=args.stitch, patch_level=args.patch_level, patch=args.patch, process_list=process_list, auto_skip=args.no_auto_skip, auto_size=args.auto_size, wsi_format=wsi_format)
